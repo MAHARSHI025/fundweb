@@ -2,9 +2,9 @@ const express = require('express')
 const app = express()
  
  
-const { AccessManagment } = require("../api/BackOffice/index.js");
+const { FundsManagment } = require("../api/BackOffice/index.js");
  
-app.use("/funds", AccessManagment);
+app.use("/funds", FundsManagment);
  
  
  

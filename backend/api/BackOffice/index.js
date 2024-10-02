@@ -1,12 +1,14 @@
-const AccessManagment = require("express").Router()
+const FundsManagment = require("express").Router()
 
-const getaddfund = require("./controllers/getaddfund")
+const getaddfund = require("./controllers/getaddfund");
+const postfunds = require("./controllers/postfunds");
  
  
-AccessManagment.get("/addfund", getaddfund)
+FundsManagment.post("/addfund", getaddfund)
+FundsManagment.post("/fundsdetail", postfunds)
  
  
  
  
  
-exports.AccessManagment = AccessManagment;
+exports.FundsManagment = FundsManagment;
