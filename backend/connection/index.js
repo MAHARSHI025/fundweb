@@ -14,6 +14,8 @@ const connection = mysql.createPool({
 const connectDB = async () => {
   connection.getConnection((err, connection) => {
     if (err) {
+      
+      console.log(process.env);
       console.error('Error connecting to the database: ' + err.stack);
       return;
     }
