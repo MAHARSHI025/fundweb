@@ -16,6 +16,7 @@ FundsManagment.post("/addperfomance", postaddperfomance)  //to add new team
 FundsManagment.post("/fundsdetail", postfunds)  //get names of funds
 FundsManagment.post("/alldetails", postalldetails)  //get details of fund
 
+// Route to add performance data
  
  
 exports.FundsManagment = FundsManagment;

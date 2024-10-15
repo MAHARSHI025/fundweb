@@ -1,80 +1,67 @@
 const { connection } = require("../../../connection");
+const util = require("util");
 
 const postaddperfomance = async (req, res) => {
-    const excelData = req.body;  // Data from the frontend
-    console.log('Received Excel Data:', excelData);
-    
-    const promises = []; // Array to hold promises for each query
+  const excelData = req.body; // Data from the frontend
+  console.log('Received data:', excelData);
 
-    // Loop through each row from the parsed Excel data
-    excelData.forEach((row) => {
-        const class_name = `Shareclass ${row.Shareclass1}`; // Construct class_name
-        const year = row.Shareclass1;  // Use year directly from data
+  // Validate incoming data
+  if (!Array.isArray(excelData) || excelData.length === 0) {
+    return res.status(400).send('Invalid input data');
+  }
 
-        const months = {
-            Jan2024: row.jan,
-            Feb2024: row.feb,
-            Mar2024: row.mar,
-            Apr2024: row.apr,
-            May2024: row.may,
-            Jun2024: row.jun,
-            Jul2024: row.jul,
-            Aug2024: row.aug,
-            Sep2024: row.sep,
-            Oct2024: row.oct,
-            Nov2024: row.nov,
-            Dec2024: row.dec,
-        };
+  try {
+    const query = util.promisify(connection.query).bind(connection);
+    const tableName = 'funds_performance'; // Ensure this is correct
 
-        Object.keys(months).forEach(month => {
-            const value = months[month];
+    const sqlQuery = `SHOW COLUMNS FROM ??`;
+    const rows = await query(sqlQuery, [tableName]);
 
-            if (value) {
-                // Check if class_name and month exist
-                const checkQuery = `SELECT * FROM funds_performance WHERE class_name = ? AND ${month} IS NOT NULL`;
-                console.log('Executing check query:', checkQuery, [class_name]);
+    const columnNames = rows.map(row => row.Field); // 'Field' contains the column name
+    console.log('Column names from DB:', columnNames); // Log the extracted column names
 
-                const promise = new Promise((resolve, reject) => {
-                    connection.query(checkQuery, [class_name], (err, result) => {
-                        if (err) {
-                            console.error('Error checking class_name and month:', err);
-                            return reject(err);
-                        }
+    const commonresults = [];
+    const noncommonresults = [];
 
-                        if (result.length > 0) {
-                            // class_name and month already exist, skip or update if necessary
-                            console.log(`class_name "${class_name}" for ${month} already exists, skipping...`);
-                            return resolve(); // Resolve without error
-                        } else {
-                            // Insert new data for the month
-                            const insertQuery = `INSERT INTO funds_performance (class_name, ${month}) VALUES (?, ?) 
-                                ON DUPLICATE KEY UPDATE ${month} = ?`;
-                            console.log('Executing insert query:', insertQuery, [class_name, value, value]);
+    // Prepare to track columns to add
+    const columnsToAdd = [];
 
-                            connection.query(insertQuery, [class_name, value, value], (err, result) => {
-                                if (err) {
-                                    console.error('Error inserting data:', err);
-                                    return reject(err);
-                                }
-                                console.log(`class_name "${class_name}" for ${month} inserted successfully`);
-                                resolve(); // Resolve when insert is successful
-                            });
-                        }
-                    });
-                });
+    for (const shareclass of excelData) {
+      const year = shareclass.Shareclass1;
+      const months = Object.keys(shareclass).filter(key => key !== 'Shareclass1');
 
-                promises.push(promise); // Add promise to the array
-            }
-        });
+      const result = months.map(month => `${month}${year}`);
+      console.log("Column names from frontend:", result);
+
+      const commonColumns = result.filter(monthYear => columnNames.includes(monthYear));
+      const nonCommonColumns = result.filter(monthYear => !columnNames.includes(monthYear));
+
+      commonresults.push({ year, commonColumns }); // Collect results for response
+      noncommonresults.push({ year, nonCommonColumns }); // Collect results for response
+
+      // Collect non-common columns for adding
+      columnsToAdd.push(...nonCommonColumns);
+    }
+
+    console.log("Common result:", commonresults);
+    console.log("Non-common result:", noncommonresults);
+
+    // Add new columns to the table
+    for (const column of [...new Set(columnsToAdd)]) { // Use Set to avoid duplicates
+      const addColumnQuery = `ALTER TABLE ?? ADD COLUMN ?? DECIMAL(10, 2)`;
+      await query(addColumnQuery, [tableName, column]);
+      console.log(`Added column: ${column}`);
+    }
+
+    res.json({
+      commonResults: commonresults,
+      nonCommonResults: noncommonresults,
     });
 
-    // Wait for all promises to resolve or reject
-    try {
-        await Promise.all(promises);
-        res.send('Data processed successfully'); // Send response after all operations are completed
-    } catch (error) {
-        res.status(500).send('Database error');
-    }
-}
+  } catch (error) {
+    console.error('Database error:', error);
+    res.status(500).send('Database error: ' + error.message);
+  }
+};
 
 module.exports = postaddperfomance;
