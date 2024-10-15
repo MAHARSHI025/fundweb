@@ -2,11 +2,18 @@ const { connection } = require("../../../connection");
 
 const postteamdetails = (req, res) => {
 
-    const { fund_id, name, designation, description, linkedin_url } = req.body;
+    const { fund_id, team_id, name, designation, description, linkedin_url } = req.body;
 
-
-    const team_id = Date.now();
     console.log(team_id);
+
+    if (team_id === "" || null) {
+        const team_id = Date.now();
+        console.log(team_id);
+
+    }
+
+
+
 
 
     const query = 'INSERT INTO team_details (team_id, name, designation, description, linkedin_url) VALUES (?, ?, ?, ?, ?)';
@@ -20,7 +27,7 @@ const postteamdetails = (req, res) => {
             if (err) {
                 return res.status(500).json({ error: err.message });
             }
-        
+
             return res.json({ message: 'Data updated successfully in fund_details' });
         });
     });

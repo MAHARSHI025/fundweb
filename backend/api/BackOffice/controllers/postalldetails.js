@@ -3,13 +3,28 @@ const { connection } = require("../../../connection");
 const postalldetails = (req, res) => {
     const { fund_id } = req.body;
 
-    // Correct SQL query with proper table joins
     const query = `
-        SELECT funds.*, funds_details.*, team_details.* 
-        FROM funds 
-        LEFT JOIN funds_details ON funds.id = funds_details.id
-        LEFT JOIN team_details ON funds_details.team_id = team_details.team_id
-        WHERE funds.id = ?`;
+    SELECT 
+        f.id, 
+        f.description AS fund_description, 
+        f.logo_url, 
+        f.firm_assets, 
+        f.strategy_assets, 
+        f.strategy_url, 
+        f.team_id, 
+        f.date_updated, 
+        t.name AS team_name, 
+        t.designation AS team_designation, 
+        t.description AS team_description, 
+        t.linkedin_url
+    FROM 
+        altsinsight.funds_details f
+    JOIN 
+        altsinsight.team_details t 
+    ON 
+        f.team_id = t.team_id
+    WHERE 
+        f.id = ?`;
 
     connection.query(query, [fund_id], (err, results) => {
         if (err) {
