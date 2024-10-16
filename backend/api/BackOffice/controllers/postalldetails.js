@@ -19,7 +19,7 @@ const postalldetails = (req, res) => {
         t.linkedin_url
     FROM 
         altsinsight.funds_details f
-    JOIN 
+    LEFT JOIN  
         altsinsight.team_details t 
     ON 
         f.team_id = t.team_id
@@ -30,6 +30,8 @@ const postalldetails = (req, res) => {
         if (err) {
             return res.status(500).json({ error: err.message });
         }
+        // console.log(results);
+        
 
         res.json({ message: 'Details of funds with team details', data: results });
     });
